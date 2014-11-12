@@ -19,6 +19,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <sys/time.h>
 
 #include "../libRF/FeaturesTable.h"
 #include "../libRF/ClassifierRF.h"
@@ -26,6 +27,13 @@
 typedef double NUM_TYPE;
 typedef FeaturesTable<NUM_TYPE> feature_type;
 typedef ClassifierRF<NUM_TYPE> classifier_type;
+
+double timestamp()
+{
+  struct timeval tv;
+  gettimeofday (&tv, 0);
+  return tv.tv_sec + 1e-6*tv.tv_usec;
+}
 
 int main(int argc, char** argv) {
 	std::cout << "Test..." << std::endl;
@@ -46,8 +54,9 @@ int main(int argc, char** argv) {
 	size_t NumClasses = RF.NumClasses();
 
 	size_t error = 0;
+	double t0 = timestamp();
 	for(size_t k=0;k<NumSamples;++k) {
-		std::cout << k << "/" << NumSamples << std::endl;
+		// std::cout << k << "/" << NumSamples << std::endl;
 		std::vector<size_t> tmp(1,k);
 		RF.RemoveSampleWithID(tmp);
 		RF.Learn();
@@ -61,6 +70,8 @@ int main(int argc, char** argv) {
 			++error;
 		}
 	}
+	t0 = timestamp() - t0;
+	printf("%g seconds elapsed.\n", t0);
 
 	std::cout << "Error: " << double(error)/NumSamples << std::endl;
 
