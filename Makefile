@@ -1,5 +1,6 @@
 CC	= g++
-CFLAGS	= -Wall -O3
+ORIGINALCFLAGS	= -Wall -O3
+CFLAGS = -Wall -fopenmp -O2
 
 all:
 	make clean

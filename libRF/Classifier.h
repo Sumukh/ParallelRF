@@ -21,6 +21,8 @@
 
 #include <vector>
 
+#include <cstddef>
+
 #include "Features.h"
 
 template <class T>

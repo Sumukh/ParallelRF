@@ -21,6 +21,8 @@
 #include <algorithm>
 #include <sys/time.h>
 
+#include <omp.h>
+
 #include "../libRF/FeaturesTable.h"
 #include "../libRF/ClassifierRF.h"
 
@@ -48,14 +50,19 @@ int main(int argc, char** argv) {
 	classifier_type::SpecialParams rp;
 	rp.numTrees = 10;
 
-	Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+	Classifier<NUM_TYPE,classifier_type,feature_type> RF1(&rp, &fp);
 
-	size_t NumSamples = RF.NumSamples();
-	size_t NumClasses = RF.NumClasses();
+	size_t NumSamples = RF1.NumSamples();
+	size_t NumClasses = RF1.NumClasses();
+
+	// Should add option to pass in the num threads as parameter.
+	omp_set_num_threads(16);
 
 	size_t error = 0;
 	double t0 = timestamp();
+	#pragma omp parallel for
 	for(size_t k=0;k<NumSamples;++k) {
+		Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
 		// std::cout << k << "/" << NumSamples << std::endl;
 		std::vector<size_t> tmp(1,k);
 		RF.RemoveSampleWithID(tmp);
@@ -67,11 +74,12 @@ int main(int argc, char** argv) {
 		RF.GetTrueClass(&trueCls, tmp);
 		RF.ClearCLF();
 		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
+			#pragma omp critical
 			++error;
 		}
 	}
 	t0 = timestamp() - t0;
-	printf("%g seconds elapsed.\n", t0);
+	std::cout << "" << t0 << " seconds elapsed" << std::endl;
 
 	std::cout << "Error: " << double(error)/NumSamples << std::endl;
 
