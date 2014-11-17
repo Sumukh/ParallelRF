@@ -208,8 +208,10 @@ int ClassifierRF<T>::ConstructTree(struct RFNode* head, std::vector<size_t>& dat
 		T BestSplitVal = 0;
 		double BestEstimation = -std::numeric_limits<double>::max();
 		size_t bestAttr = size_t(-1);
-
-		for(size_t k=0;k<selAttr.size();k++) {
+		
+    //Just trying this out TODO
+    #pragma omp parallel for
+    for(size_t k=0;k<selAttr.size();k++) {
 			T splitVal;
 			double est;
 			if(selAttr[k]!=0) {
@@ -244,7 +246,10 @@ int ClassifierRF<T>::ConstructTree(struct RFNode* head, std::vector<size_t>& dat
 	std::fill(distriSmaller, distriSmaller+numCls, T(0.0));
 	T* distriLarger = new T[numCls];
 	std::fill(distriLarger, distriLarger+numCls, T(0.0));
-	for(size_t k=0;k<dataIdx.size();++k) {
+  
+  //TODO
+  #pragma omp parallel for 
+  for(size_t k=0;k<dataIdx.size();++k) {
 		if(ClassifierGeneral<T>::feat->FeatureResponse(dataIdx[k],head->featID)<=head->splitVal) {
 			dataIdxSmaller.push_back(dataIdx[k]);
 			++distriSmaller[cls[k]];
