@@ -56,11 +56,11 @@ int main(int argc, char** argv) {
 	size_t NumClasses = RF1.NumClasses();
 
 	// Should add option to pass in the num threads as parameter.
-	omp_set_num_threads(16);
+	// omp_set_num_threads(16);
 
 	size_t error = 0;
 	double t0 = timestamp();
-	#pragma omp parallel for
+	// #pragma omp parallel for
 	for(size_t k=0;k<NumSamples;++k) {
 		Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
 		// std::cout << k << "/" << NumSamples << std::endl;

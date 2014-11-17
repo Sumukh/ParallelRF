@@ -170,7 +170,7 @@ int FeaturesTable<T>::LoadDataSet() {
 
 	std::string delimStr = "\t";
 	for(size_t k=0;k<fNames.size();++k) {
-		std::cout << fNames[k] << std::endl;
+		// std::cout << fNames[k] << std::endl;
 		std::ifstream ifs(fNames[k].c_str(), std::ios_base::in);
 		std::string line;
 		while(!ifs.eof()) {
