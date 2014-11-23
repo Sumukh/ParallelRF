@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+ #include <string.h>
 #include <cmath>
 #include <algorithm>
 #include <sys/time.h>
@@ -46,10 +47,29 @@ int main(int argc, char** argv) {
 #else
 	fp.Folder = "Dataset/Ionosphere";
 #endif
-
 	classifier_type::SpecialParams rp;
 	rp.numTrees = 10;
-
+	int numThreads = 16 ; // numThreads to use for openMP 
+	int c;
+	/* Read options of command line */
+	while((c = getopt(argc, argv, "n:t:"))!=-1)
+	    {
+	      switch(c)
+			{
+			case 'n':
+			  rp.numTrees = atoi(optarg);
+			  break;
+			case 't':
+				numThreads = atoi(optarg);
+				break;
+			}
+	    }
+	// if(argc > 2 && strncmp(argv[1], "-n",2)==0)
+	// {
+	// 	rp.numTrees = atoi(argv[2]);
+	// }
+  	std::cout << "NumTrees..." << rp.numTrees << std::endl;
+    std::cout << "NumThreads..." << numThreads << std::endl;
 	Classifier<NUM_TYPE,classifier_type,feature_type> RF1(&rp, &fp);
 
 	size_t NumSamples = RF1.NumSamples();
