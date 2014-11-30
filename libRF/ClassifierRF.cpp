@@ -41,8 +41,9 @@
 #define MY_MAX(a,b) (((a)>=(b)) ? (a) : (b))
 
 
-ClassifierRF::ClassifierRF(size_t num, FeaturesTable* f) {
+ClassifierRF::ClassifierRF(size_t num, size_t numT, FeaturesTable* f) {
 	numTrees = num;
+	numThreads = numT;
 	feat = f;
 	RFHeadNodes = new RFNode*[numTrees];	
 }
@@ -140,7 +141,7 @@ int ClassifierRF::Learn() {
 
 	srand(1);
 
-	omp_set_num_threads(16);
+	omp_set_num_threads(numThreads);
 
 	#pragma omp parallel for
 	for(size_t k=0;k<numTrees;++k) {

@@ -23,8 +23,8 @@ class RFNode;
 class ClassifierRF{
 public:
 	size_t numTrees;
+	size_t numThreads;	
 	FeaturesTable* feat;	
-	
 private:
 	RFNode** RFHeadNodes;
 	double randBetween(double From, double To, size_t resolution);
@@ -42,7 +42,7 @@ private:
 	inline double sqr(double x);
 public:
 	ClassifierRF() : RFHeadNodes(NULL){}; 
-	ClassifierRF(size_t num, FeaturesTable* feat);
+	ClassifierRF(size_t num, size_t numT, FeaturesTable* feat);
 	~ClassifierRF();
 	
 	int Learn();

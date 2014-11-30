@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 	double t0 = timestamp();
 	// #pragma omp parallel for
 	for(size_t k=0;k<NumSamples;++k) {
-		ClassifierRF* RF = new ClassifierRF(numTrees, ft);
+		ClassifierRF* RF = new ClassifierRF(numTrees,numThreads, ft);
 		// std::cout << k << "/" << NumSamples << std::endl;
 		std::vector<size_t> tmp(1,k);
 		ft->RemoveSampleWithID(tmp);
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 		RF->Classify(k,distri);
 		std::vector<size_t> trueCls;
 		ft->GetTrueClass(&trueCls, tmp);
-		RF->ClearCLF();
+		RF->ClearCLF(); 
 		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
 			#pragma omp critical
 			++error;
