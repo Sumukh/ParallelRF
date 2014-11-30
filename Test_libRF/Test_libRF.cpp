@@ -48,8 +48,9 @@ int main(int argc, char** argv) {
 	size_t numTrees = 10;
 	int numThreads = 16 ; // numThreads to use for openMP 
 	int c;
+	std::string datasetName = "Ionosphere";
 	/* Read options of command line */
-	while((c = getopt(argc, argv, "n:t:"))!=-1)
+	while((c = getopt(argc, argv, "n:t:d:"))!=-1)
 	    {
 	      switch(c)
 			{
@@ -58,6 +59,14 @@ int main(int argc, char** argv) {
 			  break;
 			case 't':
 				numThreads = atoi(optarg);
+				break;
+			case 'd':
+				datasetName = optarg;
+				#ifdef USE_ON_WINDOWS
+					fp = "..\\Dataset\\" + datasetName;
+				#else
+					fp = "Dataset/" + datasetName;
+				#endif
 				break;
 			}
 	    }
@@ -68,6 +77,7 @@ int main(int argc, char** argv) {
 
   	std::cout << "NumTrees..." << numTrees << std::endl;
     std::cout << "NumThreads..." << numThreads << std::endl;
+    std::cout << "Dataset..." << datasetName << std::endl;
     FeaturesTable* ft = new FeaturesTable(fp);
 	//ClassifierRF* RF1 = new ClassifierRF(numTrees, ft);
 	size_t NumSamples = ft->NumSamples();
