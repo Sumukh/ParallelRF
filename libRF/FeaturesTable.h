@@ -21,19 +21,15 @@
 
 #include <string>
 #include <map>
+ #include <vector>
 
-#include "Features.h"
+//#include "Features.h"
 
-template <class T>
-class FeaturesTable : public FeaturesGeneral<T> {
+class FeaturesTable{
 public:
-	struct SpecialFeatureParams : FeaturesGeneral<T>::parameter_type {
-		std::string Folder;
-	};
+	std::string Folder;
 private:
-	struct SpecialFeatureParams* params;
-
-	std::vector<std::vector<T>*> FlatData;
+	std::vector<std::vector<double>*> FlatData;
 
 	std::vector<size_t> ClassDistribution;
 	std::vector<size_t> CumSamplesPerClass;
@@ -46,9 +42,10 @@ private:
 
 	int LoadDataSet();
 	void TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames);
-	size_t convertStr(std::vector<T>& L, std::string& seq, std::string& _1cdelim, bool _removews );
+	size_t convertStr(std::vector<double>& L, std::string& seq, std::string& _1cdelim, bool _removews );
 public:
-	FeaturesTable(typename FeaturesGeneral<T>::parameter_type* fp);
+	FeaturesTable() : Folder(NULL){};
+	FeaturesTable(std::string fp);
 	~FeaturesTable();
 
 	int ClearFeat();
@@ -57,9 +54,9 @@ public:
 	size_t NumFeatures();
 	size_t NumClasses();
 	const std::vector<size_t>* GetClassDistribution();
-	int GetClassDistribution(T* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx);
+	int GetClassDistribution(double* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx);
 	int GetTrueClass(std::vector<size_t> *cls, std::vector<size_t> &dataIdx);
-	T FeatureResponse(size_t dataIdx, size_t featureId);
+	double FeatureResponse(size_t dataIdx, size_t featureId);
 
 	int RemoveSampleWithID(std::vector<size_t>& ids);
 	int ResetRemovedIDs();
