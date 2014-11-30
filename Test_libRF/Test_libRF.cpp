@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
 	// {
 	// 	rp.numTrees = atoi(argv[2]);
 	// }
+
   	std::cout << "NumTrees..." << numTrees << std::endl;
     std::cout << "NumThreads..." << numThreads << std::endl;
     FeaturesTable* ft = new FeaturesTable(fp);
