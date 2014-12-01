@@ -46,6 +46,7 @@ ClassifierRF::ClassifierRF(size_t num, size_t numT, FeaturesTable* f) {
 	numThreads = numT;
 	feat = f;
 	RFHeadNodes = new RFNode*[numTrees];	
+	omp_set_num_threads(numThreads);
 }
 
 
