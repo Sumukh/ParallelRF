@@ -27,7 +27,12 @@
 *.out
 *.app
 
+
 # unpacked datasets
 Dataset/Mnist_full/C*
 Dataset/Mnist_mini/C*
+
+
+./prog
+.DS_STORE
 
