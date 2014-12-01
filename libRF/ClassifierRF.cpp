@@ -64,7 +64,7 @@ int ClassifierRF::ClearCLF() {
 	// 		*v = NULL;
 	// 	}
 	// }
-
+	#pragma omp parallel for 
 	for(size_t i = 0; i< numTrees; i++) {
 		RFNode *v = RFHeadNodes[i];
 		if(v!=NULL) {
@@ -141,9 +141,7 @@ int ClassifierRF::Learn() {
 
 	srand(1);
 
-	omp_set_num_threads(numThreads);
-
-	#pragma omp parallel for
+	#pragma omp parallel for 
 	for(size_t k=0;k<numTrees;++k) {
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
@@ -231,8 +229,7 @@ int ClassifierRF::ConstructTree(RFNode* head, std::vector<size_t>& dataIdx, std:
 		size_t bestAttr = size_t(-1);
 		
     //Just trying this out TODO
-    #pragma omp parallel for
-    for(size_t k=0;k<selAttr.size();k++) {
+	for(size_t k=0;k<selAttr.size();k++) {
 			double splitVal;
 			double est;
 			if(selAttr[k]!=0) {
@@ -269,7 +266,6 @@ int ClassifierRF::ConstructTree(RFNode* head, std::vector<size_t>& dataIdx, std:
 	std::fill(distriLarger, distriLarger+numCls, 0.0);
   
   //TODO
-  #pragma omp parallel for 
   for(size_t k=0;k<dataIdx.size();++k) {
 		if(feat->FeatureResponse(dataIdx[k],head->featID)<=head->splitVal) {
 			dataIdxSmaller.push_back(dataIdx[k]);
@@ -433,7 +429,7 @@ int ClassifierRF::WeightedSampling(const std::vector<size_t>* SamplesPerClass, s
 			sortedWeights[k].push_back( randBetween(0, 1, numSampleReq) );
 		}
 	}
-
+	#pragma omp parallel for 
 	for(size_t k=0;k<NumClasses;++k) {
 		std::sort(sortedWeights[k].begin(), sortedWeights[k].end());
 	}
