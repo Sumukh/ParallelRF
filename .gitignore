@@ -26,3 +26,5 @@
 *.exe
 *.out
 *.app
+./prog
+.DS_STORE
