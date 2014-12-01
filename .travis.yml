@@ -3,5 +3,7 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-script:  make && ./prog && ./prog -d 'Mnist_mini'
-
+script:  
+  - make && ./prog && ./prog -d 'Mnist_mini'
+  - ./prog -n 8 -t 4 -d 'Mnist_mini'
+  - ./prog -n 4 -t 4
