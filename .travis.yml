@@ -3,5 +3,5 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-script:  make && ./prog
+script:  make && ./prog && ./prog -d 'Mnist_mini'
 
