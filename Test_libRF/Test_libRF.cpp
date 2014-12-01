@@ -46,9 +46,42 @@ int main(int argc, char** argv) {
 #else
 	fp.Folder = "Dataset/Ionosphere";
 #endif
+	std::string datasetName = "Ionosphere";
+	// Neither numTrees or NumThreads is supported
+	size_t numTrees = 16;
+	int numThreads = 16 ; // numThreads to use for openMP 
+	int c;
+	
+	/* Read options of command line */
+	while((c = getopt(argc, argv, "n:t:d:"))!=-1)
+	    {
+	      switch(c)
+			{
+			case 'n':
+			  numTrees = (size_t) atoi(optarg);
+			  break;
+			case 't':
+				numThreads = atoi(optarg);
+				break;
+			case 'd':
+				datasetName = optarg;
+				#ifdef USE_ON_WINDOWS
+					fp.Folder = "..\\Dataset\\" + datasetName;
+				#else
+					fp.Folder = "Dataset/" + datasetName;
+				#endif
+				break;
+			}
+	    }
+	// if(argc > 2 && strncmp(argv[1], "-n",2)==0)
+	// {
+	// 	rp.numTrees = atoi(argv[2]);
+	// }
+
+    std::cout << "Dataset..." << datasetName << std::endl;
 
 	classifier_type::SpecialParams rp;
-	rp.numTrees = 10;
+	rp.numTrees = numTrees;
 
 	Classifier<NUM_TYPE,classifier_type,feature_type> RF1(&rp, &fp);
 

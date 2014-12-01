@@ -124,9 +124,9 @@ int ClassifierRF<T>::Learn() {
 
 	srand(1);
 
-	omp_set_num_threads(16);
+	//omp_set_num_threads(16);
 
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for(size_t k=0;k<params->numTrees;++k) {
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
