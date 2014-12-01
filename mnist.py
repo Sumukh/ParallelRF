@@ -18,8 +18,8 @@ for name, group in grouped:
 	# Create mini binary MNIST classification dataset for faster testing.
 	if int(name) < 2:
 		fname = 'Dataset/Mnist_mini/Class' + str(int(name)) + '.txt'
-		np.savetxt(fname, group[:200])
+		np.savetxt(fname=fname, X=group[:200], fmt='%d',delimiter='\t',newline='\n')
 
 	# Create full MNIST classification for full application.
 	fname = 'Dataset/Mnist_full/Class' + str(int(name)) + '.txt'
-	np.savetxt(fname, group)
+	np.savetxt(fname=fname, X=group, fmt='%d', delimiter='\t', newline='\n')
