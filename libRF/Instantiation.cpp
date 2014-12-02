@@ -16,9 +16,9 @@
  *  Copyright (C) 2009-2012  Alexander Schwing  [aschwing _at_ inf _dot_ ethz _dot_ ch]
  */
 
-// #include "Classifier.h"
+#include "Classifier.h"
 
-// #include "FeaturesTable.h"
-// #include "ClassifierRF.h"
+#include "FeaturesTable.h"
+#include "ClassifierRF.h"
 
-// template class Classifier<double,ClassifierRF<double>,FeaturesTable<double> >;
+template class Classifier<double,ClassifierRF<double>,FeaturesTable<double> >;

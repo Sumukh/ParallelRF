@@ -26,8 +26,8 @@
 
 #ifdef USE_ON_WINDOWS
 #include <io.h>
-
-void FeaturesTable::TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames) {
+template <class T>
+void FeaturesTable<T>::TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames) {
 	struct _finddatai64_t data;
 	std::string fname = path + "\\" + pattern;
 	// start the finder -- on error _findfirsti64() will return -1, otherwise if no
@@ -51,8 +51,8 @@ void FeaturesTable::TraverseDirectory(const std::string& path, std::string& patt
 #else
 #include <dirent.h>
 #include <fnmatch.h>
-
-void FeaturesTable::TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames) {
+template <class T>
+void FeaturesTable<T>::TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames) {
 	DIR *dir, *tstdp;
     struct dirent *dp;
 
@@ -88,33 +88,36 @@ void FeaturesTable::TraverseDirectory(const std::string& path, std::string& patt
 }
 #endif
 
-FeaturesTable::FeaturesTable(std::string f) {
-	Folder = f;
+template <class T>
+FeaturesTable<T>::FeaturesTable(typename FeaturesGeneral<T>::parameter_type* fp) {
+	params = static_cast<SpecialFeatureParams*>(fp);
 	LoadDataSet();
 	removed = false;
 }
 
-
-FeaturesTable::~FeaturesTable() {
+template <class T>
+FeaturesTable<T>::~FeaturesTable() {
 	ClearFeat();
 }
 
-
-size_t FeaturesTable::NumFeatures() {
+template <class T>
+size_t FeaturesTable<T>::NumFeatures() {
 	return FlatData[0]->size();
 }
 
-size_t FeaturesTable::NumSamples() {
+template <class T>
+size_t FeaturesTable<T>::NumSamples() {
 	return ValidDataIDXToLine.size();
 }
 
-
-size_t FeaturesTable::NumClasses() {
+template <class T>
+size_t FeaturesTable<T>::NumClasses() {
 	return ClassDistribution.size();
 }
 
-int FeaturesTable::ClearFeat() {
-	for(typename std::vector<std::vector<double>*>::iterator f=FlatData.begin(), f_e=FlatData.end();f!=f_e;++f) {
+template <class T>
+int FeaturesTable<T>::ClearFeat() {
+	for(typename std::vector<std::vector<T>*>::iterator f=FlatData.begin(), f_e=FlatData.end();f!=f_e;++f) {
 		(*f)->clear();
 		delete *f;
 	}
@@ -122,7 +125,8 @@ int FeaturesTable::ClearFeat() {
 	return 0;
 }
 
-double FeaturesTable::FeatureResponse(size_t dataIdx, size_t featureId) {
+template <class T>
+T FeaturesTable<T>::FeatureResponse(size_t dataIdx, size_t featureId) {
 	if(removed) {
 		size_t tmp = ValidDataIDXToLine[dataIdx];
 		return FlatData[tmp]->at(featureId);
@@ -131,8 +135,8 @@ double FeaturesTable::FeatureResponse(size_t dataIdx, size_t featureId) {
 	}
 }
 
-
-int FeaturesTable::GetClassDistribution(double* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx) {
+template <class T>
+int FeaturesTable<T>::GetClassDistribution(T* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx) {
 	size_t curPos = 0;
 	if(cls!=NULL) {
 		cls->assign(dataIdx.size(), 0);
@@ -147,16 +151,17 @@ int FeaturesTable::GetClassDistribution(double* dist, std::vector<size_t>* cls, 
 			++curPos;
 		}
 		if(dist!=NULL) {
-			dist[k-1] = double(numSamples);
+			dist[k-1] = T(numSamples);
 		}
 	}
 	return 0;
 }
 
-int FeaturesTable::LoadDataSet() {
+template <class T>
+int FeaturesTable<T>::LoadDataSet() {
 	std::vector<std::string> fNames;
 	std::string pattern("Class*");
-	TraverseDirectory(Folder, pattern, false, fNames);
+	TraverseDirectory(params->Folder, pattern, false, fNames);
 
 	size_t numFeatures = size_t(-1);
 
@@ -171,7 +176,7 @@ int FeaturesTable::LoadDataSet() {
 		while(!ifs.eof()) {
 			line.clear();
 			std::getline(ifs, line, '\n');
-			std::vector<double>* L = new std::vector<double>;
+			std::vector<T>* L = new std::vector<T>;
 			size_t tmpNumFeatures = convertStr(*L,line, delimStr, false);
 			if(numFeatures==size_t(-1)) {
 				numFeatures = tmpNumFeatures;
@@ -193,22 +198,23 @@ int FeaturesTable::LoadDataSet() {
 	return 0;
 }
 
-
-const std::vector<size_t>* FeaturesTable::GetClassDistribution() {
+template <class T>
+const std::vector<size_t>* FeaturesTable<T>::GetClassDistribution() {
 	return &ValidClassDistribution;
 }
 
-int FeaturesTable::RemoveSampleWithID(std::vector<size_t>& ids) {
+template <class T>
+int FeaturesTable<T>::RemoveSampleWithID(std::vector<size_t>& ids) {
 	if(removed) {
 		return -1;
 	}
-	double* removeDist = new double[NumClasses()];
+	T* removeDist = new T[NumClasses()];
 	GetClassDistribution(removeDist,NULL,ids);
 
 	for(size_t k=0;k<ValidClassDistribution.size();++k) {
 		ValidClassDistribution[k] -= size_t(removeDist[k]);
 	}
-	double cumsum = 0;
+	T cumsum = 0;
 	for(size_t k=0;k<ValidCumSamplesPerClass.size();++k) {
 		ValidCumSamplesPerClass[k] -= size_t(cumsum);
 		cumsum += removeDist[k];
@@ -229,7 +235,8 @@ int FeaturesTable::RemoveSampleWithID(std::vector<size_t>& ids) {
 	return 0;
 }
 
-int FeaturesTable::ResetRemovedIDs() {
+template <class T>
+int FeaturesTable<T>::ResetRemovedIDs() {
 	std::map<size_t,size_t> NewIDXMap;
 	for(size_t k=0;k<FlatData.size();++k) {
 		NewIDXMap.insert(std::make_pair<size_t,size_t>(k,k));
@@ -244,13 +251,13 @@ int FeaturesTable::ResetRemovedIDs() {
 	return 0;
 }
 
-
-int FeaturesTable::GetTrueClass(std::vector<size_t> *cls, std::vector<size_t> &dataIdx) {
+template <class T>
+int FeaturesTable<T>::GetTrueClass(std::vector<size_t> *cls, std::vector<size_t> &dataIdx) {
 	return GetClassDistribution(NULL,cls,dataIdx);
 }
 
-
-size_t FeaturesTable::convertStr(std::vector<double>& L, std::string& seq, std::string& _1cdelim, bool _removews ) {
+template <class T>
+size_t FeaturesTable<T>::convertStr(std::vector<T>& L, std::string& seq, std::string& _1cdelim, bool _removews ) {
     typedef std::string::size_type ST;
     std::string delims = _1cdelim;
     std::string STR;
@@ -268,7 +275,9 @@ size_t FeaturesTable::convertStr(std::vector<double>& L, std::string& seq, std::
         while( (delims.find(seq[pos]) == std::string::npos) && (pos < LEN) ) STR += seq[pos++];
         // put valid STR buffer into the supplied list
         //std::cout << "[" << STR << "]";
-        if( ! STR.empty() ) L.push_back(atof(STR.c_str()));
+        if( ! STR.empty() ) L.push_back(T(atof(STR.c_str())));
     }
     return L.size();
 }
+
+template class FeaturesTable<double>;

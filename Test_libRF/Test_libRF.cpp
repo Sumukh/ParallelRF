@@ -17,16 +17,18 @@
  */
 
 #include <iostream>
- #include <string.h>
 #include <cmath>
 #include <algorithm>
 #include <sys/time.h>
 
-#include <omp.h>
+// #include <omp.h>
 
 #include "../libRF/FeaturesTable.h"
 #include "../libRF/ClassifierRF.h"
 
+typedef double NUM_TYPE;
+typedef FeaturesTable<NUM_TYPE> feature_type;
+typedef ClassifierRF<NUM_TYPE> classifier_type;
 
 double timestamp()
 {
@@ -38,68 +40,56 @@ double timestamp()
 int main(int argc, char** argv) {
 	std::cout << "Test..." << std::endl;
 
-	std::string fp;
+	feature_type::SpecialFeatureParams fp;
 #ifdef USE_ON_WINDOWS
-	fp = "..\\Dataset\\Ionosphere";
+	fp.Folder = "..\\Dataset\\Ionosphere";
 #else
-	fp = "Dataset/Ionosphere";
+	fp.Folder = "Dataset/mnist_full";
 #endif
-	
-	size_t numTrees = 10;
-	int numThreads = 16 ; // numThreads to use for openMP 
-	int c;
-	/* Read options of command line */
-	while((c = getopt(argc, argv, "n:t:"))!=-1)
-	    {
-	      switch(c)
-			{
-			case 'n':
-			  numTrees = (size_t) atoi(optarg);
-			  break;
-			case 't':
-				numThreads = atoi(optarg);
-				break;
-			}
-	    }
-	// if(argc > 2 && strncmp(argv[1], "-n",2)==0)
-	// {
-	// 	rp.numTrees = atoi(argv[2]);
-	// }
 
-  	std::cout << "NumTrees..." << numTrees << std::endl;
-    std::cout << "NumThreads..." << numThreads << std::endl;
-    FeaturesTable* ft = new FeaturesTable(fp);
-	//ClassifierRF* RF1 = new ClassifierRF(numTrees, ft);
-	size_t NumSamples = ft->NumSamples();
-	size_t NumClasses = ft->NumClasses();
+	classifier_type::SpecialParams rp;
+	rp.numTrees = 10;
+
+	Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+
+	size_t NumSamples = RF.NumSamples();
+	size_t NumClasses = RF.NumClasses();
 
 	// Should add option to pass in the num threads as parameter.
 	// omp_set_num_threads(16);
 
+	std::vector<size_t> tmp;
+	for(size_t i=0;i<NumSamples;i+=5) {
+		// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+		tmp.push_back(i);
+	}
+	RF.RemoveSampleWithID(tmp);
+
 	size_t error = 0;
 	double t0 = timestamp();
 	// #pragma omp parallel for
-	for(size_t k=0;k<NumSamples;++k) {
-		ClassifierRF* RF = new ClassifierRF(numTrees, ft);
-		// std::cout << k << "/" << NumSamples << std::endl;
-		std::vector<size_t> tmp(1,k);
-		ft->RemoveSampleWithID(tmp);
-		RF->Learn();
-		ft->ResetRemovedIDs();
-		std::vector<double> distri(NumClasses,0.0);
-		RF->Classify(k,distri);
+	// for(size_t k=0;k<NumSamples;++k) {
+	// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+	// std::cout << k << "/" << NumSamples << std::endl;
+	RF.Learn();
+	RF.ResetRemovedIDs();
+	std::vector<double> distri(NumClasses,0.0);
+	for (size_t j=0; j<NumSamples; j+= 5) {
+		// std::vector<size_t> tmp(1,j);
+		RF.Classify(j,distri);
 		std::vector<size_t> trueCls;
-		ft->GetTrueClass(&trueCls, tmp);
-		RF->ClearCLF();
+		RF.GetTrueClass(&trueCls, tmp);
+		// RF.ClearCLF();
 		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-			#pragma omp critical
+			// #pragma omp critical
 			++error;
 		}
 	}
+	// }
 	t0 = timestamp() - t0;
 	std::cout << "" << t0 << " seconds elapsed" << std::endl;
 
-	std::cout << "Error: " << double(error)/NumSamples << std::endl;
+	std::cout << "Error: " << double(error)/(NumSamples/5) << std::endl;
 
 	return 0;
 }
