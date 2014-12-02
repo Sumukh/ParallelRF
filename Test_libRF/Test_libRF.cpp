@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
 	//ClassifierRF* RF1 = new ClassifierRF(numTrees, ft);
 	size_t NumSamples = ft->NumSamples();
 	size_t NumClasses = ft->NumClasses();
+	//std::cout << NumClasses << std::endl;
 
 	// Should add option to pass in the num threads as parameter.
 	// omp_set_num_threads(16);
@@ -96,15 +97,22 @@ int main(int argc, char** argv) {
 		ft->RemoveSampleWithID(tmp);
 		RF->Learn();
 		ft->ResetRemovedIDs();
-		std::vector<double> distri(NumClasses,0.0);
-		RF->Classify(k,distri);
+		//std::vector<double> distri(NumClasses,0.0);
+		double* distri = new double[NumClasses];
+		std::fill(distri, distri+NumClasses, 0.0);
+		RF->Classify(k,distri,NumClasses);
 		std::vector<size_t> trueCls;
 		ft->GetTrueClass(&trueCls, tmp);
 		RF->ClearCLF(); 
-		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-			#pragma omp critical
+		// if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
+		// 	#pragma omp critical
+		// 	++error;
+		// }
+		if(size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) { 
+			//#pragma omp critical
 			++error;
 		}
+		delete [] distri;
 	}
 	t0 = timestamp() - t0;
 	std::cout << "" << t0 << " seconds elapsed" << std::endl;

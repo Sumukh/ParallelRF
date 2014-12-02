@@ -29,14 +29,14 @@ private:
 	RFNode** RFHeadNodes;
 	double randBetween(double From, double To, size_t resolution);
 	int WeightedSampling(const std::vector<size_t>* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep);
-	int ConstructTree(RFNode* head, std::vector<size_t>& dataIdx, std::vector<size_t>& cls, std::vector<double>& wAttr, size_t AttributesToSample);
+	int ConstructTree(RFNode* head, std::vector<size_t>& dataIdx, std::vector<size_t>& cls, double* wAttr, size_t wAttrSize, size_t AttributesToSample);
 	bool stoppingCriteria(RFNode* node);
-	int whichAttributes(std::vector<double>& wAttr, size_t AttributesToSample, std::vector<int>& selAttr);
+	int whichAttributes(double* wAttr, size_t wAttrSize, size_t AttributesToSample, std::vector<int>& selAttr);
 	int ImpuritySplit(std::vector<size_t>& dataIdx, std::vector<size_t>& cls, size_t featureId, double* splitVal, double* bestEstimation);
 	double GiniImpurity(size_t weight, size_t* noClassAttrVal, size_t valIdx, size_t noClasses);
 	double GiniImpurityGain(double priorImp, size_t weight, size_t* noAttrVal, size_t* noClassAttrVal, size_t noClasses);
 
-	int ClassifyTree(RFNode* node, size_t dataIdx, std::vector<double>& distri);
+	int ClassifyTree(RFNode* node, size_t dataIdx, double* distri, size_t distri_size);
 	int ClearNode(RFNode* v);
 
 	inline double sqr(double x);
@@ -46,7 +46,7 @@ public:
 	~ClassifierRF();
 	
 	int Learn();
-	int Classify(size_t dataIdx, std::vector<double>& distri);
+	int Classify(size_t dataIdx, double* distri, size_t distri_size);
 	int ClearCLF();
 };
 
