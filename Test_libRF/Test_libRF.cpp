@@ -119,15 +119,18 @@ int main(int argc, char** argv) {
 	  // Return test data to model for use in cross-validation (I think).
 	  ft->ResetRemovedIDs();
 
+	  omp_set_num_threads(numThreads);
 	  // Compute error of model on test data.
+	  // Tried to use OpenMP to parallelize the classification but ended up being over a second slower with 16 threads than without OpenMP.
+	  // #pragma omp parallel for reduction(+:error)
 	  for (size_t i=0; i<NumSamples; i++) {
 	    std::vector<size_t> tmp(1,i);
 	    double* distri = new double[NumClasses];
 	    std::fill(distri, distri+NumClasses, 0.0);
-	    std::cout << i  << std::endl;
 	    RF->Classify(i, distri, NumClasses);
 	    std::vector<size_t> trueCls;
 	    ft->GetTrueClass(&trueCls, tmp);
+	    // Compare predicted class of test data from model to actual class.
 	    if (size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) {
 	      ++error;
 	    }
