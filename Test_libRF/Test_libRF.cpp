@@ -45,10 +45,10 @@ int main(int argc, char** argv) {
 	fp = "Dataset/Ionosphere";
 #endif
 	
-	size_t numTrees = 10;
+	size_t numTrees = 16;
 	int numThreads = 16 ; // numThreads to use for openMP 
 	int c;
-	std::string datasetName = "Ionosphere";
+	std::string datasetName = "Mnist_full";
 	std::string validation = "FiveFold";
 	/* Read options of command line */
 	while((c = getopt(argc, argv, "n:t:d:v:"))!=-1)
