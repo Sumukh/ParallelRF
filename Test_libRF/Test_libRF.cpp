@@ -49,36 +49,43 @@ int main(int argc, char** argv) {
 	int numThreads = 16 ; // numThreads to use for openMP 
 	int c;
 	std::string datasetName = "Ionosphere";
+	std::string validation = "FiveFold";
 	/* Read options of command line */
-	while((c = getopt(argc, argv, "n:t:d:"))!=-1)
-	    {
-	      switch(c)
-			{
-			case 'n':
-			  numTrees = (size_t) atoi(optarg);
-			  break;
-			case 't':
-				numThreads = atoi(optarg);
-				break;
-			case 'd':
-				datasetName = optarg;
-				#ifdef USE_ON_WINDOWS
-					fp = "..\\Dataset\\" + datasetName;
-				#else
-					fp = "Dataset/" + datasetName;
-				#endif
-				break;
-			}
-	    }
+	while((c = getopt(argc, argv, "n:t:d:v:"))!=-1)
+	  {
+	    switch(c)
+	      {
+	      case 'n':
+		numTrees = (size_t) atoi(optarg);
+		break;
+	      case 't':
+		numThreads = atoi(optarg);
+		break;
+	      case 'd':
+		datasetName = optarg;
+#ifdef USE_ON_WINDOWS
+		fp = "..\\Dataset\\" + datasetName;
+#else
+		fp = "Dataset/" + datasetName;
+#endif
+		break;
+	      case 'v':
+		if (std::string(optarg).compare("LeaveOneOut") == 0) {
+		  validation = optarg;
+		}
+		break;
+	      }
+	  }
 	// if(argc > 2 && strncmp(argv[1], "-n",2)==0)
 	// {
 	// 	rp.numTrees = atoi(argv[2]);
 	// }
 
   	std::cout << "NumTrees..." << numTrees << std::endl;
-    std::cout << "NumThreads..." << numThreads << std::endl;
-    std::cout << "Dataset..." << datasetName << std::endl;
-    FeaturesTable* ft = new FeaturesTable(fp);
+	std::cout << "NumThreads..." << numThreads << std::endl;
+	std::cout << "Dataset..." << datasetName << std::endl;
+	std::cout << "Validation..." << validation << std::endl;
+	FeaturesTable* ft = new FeaturesTable(fp);
 	//ClassifierRF* RF1 = new ClassifierRF(numTrees, ft);
 	size_t NumSamples = ft->NumSamples();
 	size_t NumClasses = ft->NumClasses();
@@ -87,75 +94,79 @@ int main(int argc, char** argv) {
 	// Should add option to pass in the num threads as parameter.
 	// omp_set_num_threads(16);
 
-	// Select 20% of data for test dataset.
-	// Hacky, but deterministic which is good for testing.
-	std::vector<size_t> test;
-	for(size_t i=0; i<NumSamples; i+=5) {
-		test.push_back(i);
-	}
-
-	// Create random forest model.
-	ClassifierRF* RF = new ClassifierRF(numTrees, numThreads, ft);
-
-	// Remove test dataset so it is not used in training.
-	ft->RemoveSampleWithID(test);
-
-	// Time training (including cross validation) of random forest model.
-	double t0 = timestamp();
-	
-	// Learn (train) random forest model.
-	RF->Learn();
-
-	// Return test data to model for use in cross-validation (I think).
-	ft->ResetRemovedIDs();
-
-	// Compute error of model on test data.
+	double t0;
 	size_t error = 0;
-	for (size_t i=0; i<NumSamples; i++) {
-		std::vector<size_t> tmp(1,i);
-		double* distri = new double[NumClasses];
-		std::fill(distri, distri+NumClasses, 0.0);
-		std::cout << i  << std::endl;
-		RF->Classify(i, distri, NumClasses);
-		std::vector<size_t> trueCls;
-		ft->GetTrueClass(&trueCls, tmp);
-		if (size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) {
-			++error;
-		}
-		delete[] distri;
-	}
-	t0 = timestamp() - t0;
+	if (validation.compare("FiveFold") == 0) {
+	  // Select 20% of data for test dataset.
+	  // Hacky, but deterministic which is good for testing.
+	  std::vector<size_t> test;
+	  for(size_t i=0; i<NumSamples; i+=5) {
+	    test.push_back(i);
+	  }
 
-	// // #pragma omp parallel for
-	// for(size_t k=0;k<NumSamples;++k) {
-	// 	ClassifierRF* RF = new ClassifierRF(numTrees,numThreads, ft);
-	// 	// std::cout << k << "/" << NumSamples << std::endl;
-	// 	std::vector<size_t> tmp(1,k);
-	// 	ft->RemoveSampleWithID(tmp);
-	// 	RF->Learn();
-	// 	ft->ResetRemovedIDs();
-	// 	//std::vector<double> distri(NumClasses,0.0);
-	// 	double* distri = new double[NumClasses];
-	// 	std::fill(distri, distri+NumClasses, 0.0);
-	// 	RF->Classify(k,distri,NumClasses);
-	// 	std::vector<size_t> trueCls;
-	// 	ft->GetTrueClass(&trueCls, tmp);
-	// 	RF->ClearCLF(); 
-	// 	// if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-	// 	// 	#pragma omp critical
-	// 	// 	++error;
-	// 	// }
-	// 	if(size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) { 
-	// 		//#pragma omp critical
-	// 		++error;
-	// 	}
-	// 	delete [] distri;
-	// }
-	// t0 = timestamp() - t0;
+	  // Create random forest model.
+	  ClassifierRF* RF = new ClassifierRF(numTrees, numThreads, ft);
 
-	std::cout << "" << t0 << " seconds elapsed" << std::endl;
+	  // Remove test dataset so it is not used in training.
+	  ft->RemoveSampleWithID(test);
 
-	std::cout << "Error: " << double(error)/NumSamples << std::endl;
+	  // Time training (including cross validation) of random forest model.
+	  t0 = timestamp();
+	
+	  // Learn (train) random forest model.
+	  RF->Learn();
 
-	return 0;
+	  // Return test data to model for use in cross-validation (I think).
+	  ft->ResetRemovedIDs();
+
+	  // Compute error of model on test data.
+	  for (size_t i=0; i<NumSamples; i++) {
+	    std::vector<size_t> tmp(1,i);
+	    double* distri = new double[NumClasses];
+	    std::fill(distri, distri+NumClasses, 0.0);
+	    std::cout << i  << std::endl;
+	    RF->Classify(i, distri, NumClasses);
+	    std::vector<size_t> trueCls;
+	    ft->GetTrueClass(&trueCls, tmp);
+	    if (size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) {
+	      ++error;
+	    }
+	    delete[] distri;
+	  }
+	  t0 = timestamp() - t0;
+	} else if (validation.compare("LeaveOneOut") == 0) {
+	    t0 = timestamp();
+	    // #pragma omp parallel for
+	    for(size_t k=0;k<NumSamples;++k) {
+	      ClassifierRF* RF = new ClassifierRF(numTrees,numThreads, ft);
+	      // std::cout << k << "/" << NumSamples << std::endl;
+	      std::vector<size_t> tmp(1,k);
+	      ft->RemoveSampleWithID(tmp);
+	      RF->Learn();
+	      ft->ResetRemovedIDs();
+	      //std::vector<double> distri(NumClasses,0.0);
+	      double* distri = new double[NumClasses];
+	      std::fill(distri, distri+NumClasses, 0.0);
+	      RF->Classify(k,distri,NumClasses);
+	      std::vector<size_t> trueCls;
+	      ft->GetTrueClass(&trueCls, tmp);
+	      RF->ClearCLF(); 
+	      // if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
+	      // 	#pragma omp critical
+	      // 	++error;
+	      // }
+	      if(size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) { 
+		//#pragma omp critical
+		++error;
+	      }
+	      delete [] distri;
+	    }
+	    t0 = timestamp() - t0;
+	  }
+
+	  std::cout << "" << t0 << " seconds elapsed" << std::endl;
+
+	  std::cout << "Error: " << double(error)/NumSamples << std::endl;
+
+	  return 0;
 }
