@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 #ifdef USE_ON_WINDOWS
 	fp = "..\\Dataset\\Ionosphere";
 #else
-	fp = "Dataset/Ionosphere";
+	fp = "Dataset/Mnist_full";
 #endif
 	
 	size_t numTrees = 16;
