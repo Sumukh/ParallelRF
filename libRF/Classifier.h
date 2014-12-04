@@ -33,7 +33,7 @@ public:
 	};
 	FeaturesGeneral<T>* feat;
 public:
-	virtual int Learn() = 0;
+	virtual int Learn(int numThreads) = 0;
 	virtual int Classify(size_t dataIdx, std::vector<T>& distri) = 0;
 	virtual int ClearCLF() = 0;
 };
