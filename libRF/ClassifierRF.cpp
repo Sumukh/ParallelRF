@@ -25,7 +25,7 @@
 #include <limits>
 
 #include <string.h>
-// #include <omp.h>
+#include <omp.h>
 
 #include "ClassifierRF.h"
 #include "Features.h"
@@ -106,9 +106,8 @@ double ClassifierRF<T>::randBetween(double From, double To, size_t resolution) {
 }
 
 template <class T>
-int ClassifierRF<T>::Learn() {
+int ClassifierRF<T>::Learn(int numThreads) {
 	//std::cout << "Learning started..." << std::endl;
-
 
 	size_t numAttr = ClassifierGeneral<T>::feat->NumFeatures();
 	size_t AttributesToSample = MY_MAX(1, size_t(std::ceil(std::sqrt(double(numAttr)))));
@@ -128,9 +127,9 @@ int ClassifierRF<T>::Learn() {
 
 	srand(1);
 
-	// omp_set_num_threads(16);
+	omp_set_num_threads(numThreads);
 
-	// #pragma omp parallel for
+	#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<params->numTrees;++k) {
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
@@ -171,7 +170,7 @@ int ClassifierRF<T>::Learn() {
 			}
 		}
 
-		std::cout << "Performance Tree " << k << ": " << T(error)/oobIdx.size() << std::endl;
+		// std::cout << "Performance Tree " << k << ": " << T(error)/oobIdx.size() << std::endl;
 	}
 
 	//std::cout << "Learning finished..." << std::endl;
@@ -242,7 +241,7 @@ int ClassifierRF<T>::ConstructTree(struct RFNode* head, std::vector<size_t>& dat
 		}
 
 
-		std::cout << "Best estimation:" << BestEstimation << std::endl;
+		// std::cout << "Best estimation:" << BestEstimation << std::endl;
 		if(BestEstimation<=0) {
 			if(maxTries==0) {
 				std::cout << "We cannot do better anymore..." << std::endl;

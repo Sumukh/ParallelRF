@@ -23,6 +23,8 @@
 
 #include "Classifier.h"
 
+#include <omp.h>
+
 template <class T>
 class ClassifierRF : public ClassifierGeneral<T> {
 public:
@@ -59,7 +61,7 @@ public:
 	ClassifierRF(typename ClassifierGeneral<T>::parameter_type* rp);
 	~ClassifierRF();
 	
-	int Learn();
+	int Learn(int numThreads);
 	int Classify(size_t dataIdx, std::vector<T>& distri);
 	int ClearCLF();
 };
