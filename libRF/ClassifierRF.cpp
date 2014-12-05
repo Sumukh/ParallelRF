@@ -140,7 +140,7 @@ int ClassifierRF::Learn() {
 
 	const std::vector<size_t>* dist = feat->GetClassDistribution();
 	srand(1);
-	#pragma omp parallel for
+	#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<numTrees;++k) {
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
