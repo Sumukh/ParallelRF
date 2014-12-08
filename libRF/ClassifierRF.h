@@ -52,10 +52,10 @@ public:
 
 class RFNode{
 public:
-		RFNode* NodeSmaller;
-		RFNode* NodeLarger;
 		size_t featID;
 		double splitVal;
+		RFNode* NodeSmaller;
+		RFNode* NodeLarger;
 		double* dist;
-		RFNode() : NodeSmaller(NULL), NodeLarger(NULL), featID(size_t(-1)), splitVal(0.0), dist(NULL) {};
+		RFNode() :featID(size_t(-1)), splitVal(0.0),NodeSmaller(NULL), NodeLarger(NULL), dist(NULL) {};
 };

@@ -127,14 +127,14 @@ int ClassifierRF::Learn() {
 
 
 	double wAttr[numAttr];
-	std::fill_n(wAttr, numAttr, 1.0/numAttr);
+	//std::fill_n(wAttr, numAttr, 1.0/numAttr);
 	
 	//std::partial_sum(wAttr, wAttr + numAttr, wAttr, std::plus<double>());
-	// #pragma omp parallel for
-	// for(size_t i=0; i < numAttr; i++)
-	// {
-	// 	wAttr[i] = 1.0/numAttr;
-	// }
+	#pragma omp parallel for schedule(dynamic)
+	for(size_t i=0; i < numAttr; i++)
+	{
+		wAttr[i] = 1.0/numAttr;
+	}
 	std::partial_sum(wAttr, wAttr+numAttr, wAttr); // <-- SSE ?
 	wAttr[numAttr-1] = 1.01;
 
