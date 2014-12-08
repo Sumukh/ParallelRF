@@ -124,12 +124,10 @@ int ClassifierRF::Learn() {
 	size_t numAttr = feat->NumFeatures();
 	size_t AttributesToSample = MY_MAX(1, size_t(std::ceil(std::sqrt(double(numAttr)))));
 	//AttributesToSample = MY_MAX(1, 1+size_t(LOG2(double(numAttr))));
-
+	//std::cout << "Num Attributes" << numAttr <<std::endl;
 
 	double wAttr[numAttr];
 	//std::fill_n(wAttr, numAttr, 1.0/numAttr);
-	
-	//std::partial_sum(wAttr, wAttr + numAttr, wAttr, std::plus<double>());
 	#pragma omp parallel for schedule(dynamic)
 	for(size_t i=0; i < numAttr; i++)
 	{
@@ -138,15 +136,16 @@ int ClassifierRF::Learn() {
 	std::partial_sum(wAttr, wAttr+numAttr, wAttr); // <-- SSE ?
 	wAttr[numAttr-1] = 1.01;
 
-	const std::vector<size_t>* dist = feat->GetClassDistribution();
+	const size_t* dist = feat->GetClassDistribution();
+	size_t distSize = feat->GetClassDistributionSize();
 	srand(1);
 	#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<numTrees;++k) {
 		//set class uniform data weights
-		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
+		std::vector<std::vector<double> > DataWeights(distSize, std::vector<double>());
 		//std::cout << "Dist size " << dist->size() << std::endl;
-		for(size_t m=0;m<dist->size();++m) {
-			DataWeights[m].assign(dist->at(m), 1.0/dist->at(m));
+		for(size_t m=0;m<distSize;++m) {
+			DataWeights[m].assign(dist[m], 1.0/dist[m]);
 			// std::cout << "size used in assign " << dist->at(m) << std::endl;
 		}
 
@@ -156,7 +155,7 @@ int ClassifierRF::Learn() {
 
 		//initialize tree
 		RFHeadNodes[k] = new RFNode();
-		RFHeadNodes[k]->dist = new double[dist->size()];
+		RFHeadNodes[k]->dist = new double[distSize];
 		std::vector<size_t> cls;
 		feat->GetClassDistribution(RFHeadNodes[k]->dist, &cls, ibIdx);
 
@@ -166,10 +165,10 @@ int ClassifierRF::Learn() {
 		feat->GetClassDistribution(NULL, &cls, oobIdx);
 		size_t error = 0;
 		for(size_t m=0;m<oobIdx.size();++m) {
-			double* distri = new double[dist->size()];
-			std::fill_n(distri, dist->size(), 0.0); 
-			ClassifyTree(RFHeadNodes[k], oobIdx[m], distri,dist->size());
-			size_t predCls = std::max_element(distri, distri + dist->size())-distri; 
+			double* distri = new double[distSize];
+			std::fill_n(distri, distSize, 0.0); 
+			ClassifyTree(RFHeadNodes[k], oobIdx[m], distri,distSize);
+			size_t predCls = std::max_element(distri, distri + distSize)-distri; 
 			if(predCls!=cls[m]) {
 				++error;
 			}
@@ -382,11 +381,19 @@ double ClassifierRF::GiniImpurity(size_t weight, size_t* tab, size_t valIdx, siz
 
 double ClassifierRF::GiniImpurityGain(double priorImp, size_t weight, size_t* numLR, size_t* tab, size_t numClasses) {
 	double tempP, gini=0.0;
-    for(int valIdx=0;valIdx<2;++valIdx) {		//loop over left and right side
-	   tempP = double(numLR[valIdx])/weight;
-	   if (numLR[valIdx]>0)
-         gini += tempP * GiniImpurity(numLR[valIdx], tab, valIdx, numClasses);
-    }
+    // for(int valIdx=0;valIdx<2;++valIdx) {		//loop over left and right side
+	   // tempP = double(numLR[valIdx])/weight;
+	   // if (numLR[valIdx]>0)
+    //      gini += tempP * GiniImpurity(numLR[valIdx], tab, valIdx, numClasses);
+    // }
+
+	tempP = double(numLR[0])/weight;
+	if (numLR[0]>0)
+        gini += tempP * GiniImpurity(numLR[0], tab, 0, numClasses);
+    tempP = double(numLR[1])/weight;
+	if (numLR[1]>0)
+        gini += tempP * GiniImpurity(numLR[1], tab, 1, numClasses);
+   
     return (gini - priorImp);
 }
 
@@ -427,14 +434,14 @@ bool ClassifierRF::stoppingCriteria(RFNode* node) {
 }
 
 
-int ClassifierRF::WeightedSampling(const std::vector<size_t>* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep) {
+int ClassifierRF::WeightedSampling(const size_t* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep) {
 	std::vector<std::vector<double> > sortedWeights;
-	size_t NumClasses = SamplesPerClass->size();
+	size_t NumClasses = feat->GetClassDistributionSize();
 	sortedWeights.resize(NumClasses);
 	//std::cout << "NumClasses " << NumClasses << std::endl;
 	for(size_t k=0;k<NumClasses;++k) {
 		size_t validSamples = 0;
-		size_t numSampleReq = SamplesPerClass->at(k);
+		size_t numSampleReq = SamplesPerClass[k];
 		//std::cout << "numSampleReq " << numSampleReq << std::endl;
 		while(validSamples++<numSampleReq) {
 			sortedWeights[k].push_back( randBetween(0, 1, numSampleReq) );
