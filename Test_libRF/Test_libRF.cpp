@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 #ifdef USE_ON_WINDOWS
 	fp.Folder = "..\\Dataset\\Ionosphere";
 #else
-	fp.Folder = "Dataset/Ionosphere";
+	fp.Folder = "Dataset/Mnist_full";
 #endif
 	classifier_type::SpecialParams rp;
 	rp.numTrees = 10;
@@ -70,35 +70,45 @@ int main(int argc, char** argv) {
 	// }
   	std::cout << "NumTrees..." << rp.numTrees << std::endl;
     std::cout << "NumThreads..." << numThreads << std::endl;
-	Classifier<NUM_TYPE,classifier_type,feature_type> RF1(&rp, &fp);
+	Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
 
-	size_t NumSamples = RF1.NumSamples();
-	size_t NumClasses = RF1.NumClasses();
+	size_t NumSamples = RF.NumSamples();
+	size_t NumClasses = RF.NumClasses();
 
 	// Should add option to pass in the num threads as parameter.
 	// omp_set_num_threads(16);
 
+
+	std::vector<size_t> tmp;
+	for(size_t i=0;i<NumSamples;i+=5) {
+		// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+		tmp.push_back(i);
+	}
+
+	RF.RemoveSampleWithID(tmp);
 	size_t error = 0;
 	double t0 = timestamp();
 	// #pragma omp parallel for
-	for(size_t k=0;k<NumSamples;++k) {
-		Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
-		// std::cout << k << "/" << NumSamples << std::endl;
-		std::vector<size_t> tmp(1,k);
-		RF.RemoveSampleWithID(tmp);
-		RF.Learn();
-		RF.ResetRemovedIDs();
+	// for(size_t k=0;k<NumSamples;++k) {
+	// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+	// std::cout << k << "/" << NumSamples << std::endl;
+	RF.Learn();
+	RF.ResetRemovedIDs();
+	for (size_t j=0; j<NumSamples; j+= 5) {
 		std::vector<double> distri(NumClasses,0.0);
-		RF.Classify(k,distri);
+		std::vector<size_t> tmp2(1,j);
+		RF.Classify(j,distri);
 		std::vector<size_t> trueCls;
-		RF.GetTrueClass(&trueCls, tmp);
-		RF.ClearCLF();
+		RF.GetTrueClass(&trueCls, tmp2);
+		// RF.ClearCLF();
 		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-			#pragma omp critical
+			// #pragma omp critical
 			++error;
 		}
 	}
+
 	t0 = timestamp() - t0;
+	RF.ClearCLF();
 	std::cout << "" << t0 << " seconds elapsed" << std::endl;
 
 	std::cout << "Error: " << double(error)/NumSamples << std::endl;
