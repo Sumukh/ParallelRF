@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
 	fp.Folder = "Dataset/Mnist_full";
 #endif
 	classifier_type::SpecialParams rp;
-	rp.numTrees = 10;
-	int numThreads = 16 ; // numThreads to use for openMP 
+	rp.numTrees = 16;
+	int numThreads = 16; // numThreads to use for openMP 
 	int c;
 	/* Read options of command line */
 	while((c = getopt(argc, argv, "n:t:"))!=-1)
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
 	RF.ClearCLF();
 	std::cout << "" << t0 << " seconds elapsed" << std::endl;
 
-	std::cout << "Error: " << double(error)/NumSamples << std::endl;
+	std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
 
 	return 0;
 }
