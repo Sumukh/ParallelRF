@@ -20,7 +20,7 @@
 #include <cmath>
 #include <algorithm>
 #include <sys/time.h>
-
+#include <getopt.h>
 #include <omp.h>
 
 #include "../libRF/FeaturesTable.h"
