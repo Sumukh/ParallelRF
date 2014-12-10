@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 #endif
 
 	classifier_type::SpecialParams rp;
-	rp.numTrees = 32;
+	rp.numTrees = 16;
 	// int numThreads = atoi(argv[1]);
 
 	Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "Threads,Seconds,Error,Actual Threads" << std::endl;
 
-	for (int t=16; t>=15; t-=5) {
+	for (int t=16; t>=1; t-=1) {
 		RF.RemoveSampleWithID(tmp);
 		size_t error = 0;
 		double t0 = timestamp();
