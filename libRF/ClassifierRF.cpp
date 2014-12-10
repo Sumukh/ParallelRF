@@ -129,8 +129,11 @@ int ClassifierRF<T>::Learn(int numThreads) {
 
 	omp_set_num_threads(numThreads);
 
+	int actual_threads = omp_get_num_threads();
 	#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<params->numTrees;++k) {
+		actual_threads = omp_get_num_threads();
+
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
 		for(size_t m=0;m<dist->size();++m) {
@@ -174,7 +177,7 @@ int ClassifierRF<T>::Learn(int numThreads) {
 	}
 
 	//std::cout << "Learning finished..." << std::endl;
-	return 0;
+	return actual_threads;
 }
 
 template <class T>

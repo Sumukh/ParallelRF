@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 #endif
 
 	classifier_type::SpecialParams rp;
-	rp.numTrees = 16;
+	rp.numTrees = 32;
 	// int numThreads = atoi(argv[1]);
 
 	Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
@@ -66,9 +66,9 @@ int main(int argc, char** argv) {
 	}
 	// RF.RemoveSampleWithID(tmp);
 
-	std::cout << "Threads,Seconds,Error" << std::endl;
+	std::cout << "Threads,Seconds,Error,Actual Threads" << std::endl;
 
-	for (int t=16; t>=1; t--) {
+	for (int t=16; t>=15; t-=5) {
 		RF.RemoveSampleWithID(tmp);
 		size_t error = 0;
 		double t0 = timestamp();
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
 		// for(size_t k=0;k<NumSamples;++k) {
 		// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
 		// std::cout << k << "/" << NumSamples << std::endl;
-		RF.Learn(t);
+		int actual_threads = RF.Learn(t);
 		RF.ResetRemovedIDs();
 		for (size_t j=0; j<NumSamples; j+= 5) {
 			std::vector<double> distri(NumClasses,0.0);
@@ -94,9 +94,9 @@ int main(int argc, char** argv) {
 		t0 = timestamp() - t0;
 		RF.ClearCLF();
 
-		// std::cout << "Threads,Seconds,Error" << std::endl;
-		std::cout << t << "," << t0 << "," << double(error)/(NumSamples/5) << std::endl;
-
+		// std::cout << "Threads,Seconds,Error,Actual_threads" << std::endl;
+		std::cout << t << "," << t0 << "," << double(error)/(NumSamples/5) << ',' << actual_threads << std::endl;
+		std::cout << error << std::endl;
 		// std::cout << "Error: " << double(error)/(NumSamples/5) << std::endl;
 	}
 	return 0;
