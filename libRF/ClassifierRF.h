@@ -18,6 +18,7 @@
 
 #include <vector>
 #include "FeaturesTable.h"
+#include <xmmintrin.h>
 
 class RFNode;
 class ClassifierRF{
@@ -38,6 +39,11 @@ private:
 
 	int ClassifyTree(RFNode* node, size_t dataIdx, double* distri, size_t distri_size);
 	int ClearNode(RFNode* v);
+
+	__m128d scan_SSE(__m128d x);
+    double pass1_SSE(double *a, double *s, const int n);
+    void pass2_SSE(double *s, __m128d offset, const int n);
+    void scan_omp_SSEp2_SSEp1_chunk(double a[], double s[], int n);
 
 	inline double sqr(double x);
 public:
