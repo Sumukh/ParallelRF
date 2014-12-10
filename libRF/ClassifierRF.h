@@ -28,7 +28,7 @@ public:
 private:
 	RFNode** RFHeadNodes;
 	double randBetween(double From, double To, size_t resolution);
-	int WeightedSampling(const std::vector<size_t>* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep);
+	int WeightedSampling(const size_t* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep);
 	int ConstructTree(RFNode* head, std::vector<size_t>& dataIdx, std::vector<size_t>& cls, double* wAttr, size_t wAttrSize, size_t AttributesToSample);
 	bool stoppingCriteria(RFNode* node);
 	int whichAttributes(double* wAttr, size_t wAttrSize, size_t AttributesToSample, std::vector<int>& selAttr);
@@ -52,10 +52,10 @@ public:
 
 class RFNode{
 public:
-		RFNode* NodeSmaller;
-		RFNode* NodeLarger;
 		size_t featID;
 		double splitVal;
+		RFNode* NodeSmaller;
+		RFNode* NodeLarger;
 		double* dist;
-		RFNode() : NodeSmaller(NULL), NodeLarger(NULL), featID(size_t(-1)), splitVal(0.0), dist(NULL) {};
+		RFNode() :featID(size_t(-1)), splitVal(0.0),NodeSmaller(NULL), NodeLarger(NULL), dist(NULL) {};
 };

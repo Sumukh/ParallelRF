@@ -26,34 +26,34 @@
 //#include "Features.h"
 
 class FeaturesTable{
-public:
-	std::string Folder;
 private:
-	std::vector<std::vector<double>*> FlatData;
-
-	std::vector<size_t> ClassDistribution;
-	std::vector<size_t> CumSamplesPerClass;
-
-	std::vector<size_t> ValidClassDistribution;
-	std::vector<size_t> ValidCumSamplesPerClass;
-
 	bool removed;
+	size_t ClassDistributionSize; 
+	size_t ValidClassDistributionSize;	
+	size_t* ClassDistribution;
+	size_t* ValidClassDistribution;
+	std::vector<size_t> CumSamplesPerClass;
+	std::vector<size_t>  ValidCumSamplesPerClass;
 	std::map<size_t,size_t> ValidDataIDXToLine;
+	std::vector<std::vector<double>*> FlatData;
+	
 
 	int LoadDataSet();
 	void TraverseDirectory(const std::string& path, std::string& pattern, bool subdirectories, std::vector<std::string>& fileNames);
 	size_t convertStr(std::vector<double>& L, std::string& seq, std::string& _1cdelim, bool _removews );
 public:
+	std::string Folder;
 	FeaturesTable() : Folder(NULL){};
 	FeaturesTable(std::string fp);
 	~FeaturesTable();
 
 	int ClearFeat();
-
+	size_t GetClassDistributionSize();
+	size_t GetValidClassDistributionSize();
 	size_t NumSamples();
 	size_t NumFeatures();
 	size_t NumClasses();
-	const std::vector<size_t>* GetClassDistribution();
+	const size_t* GetClassDistribution();
 	int GetClassDistribution(double* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx);
 	int GetTrueClass(std::vector<size_t> *cls, std::vector<size_t> &dataIdx);
 	double FeatureResponse(size_t dataIdx, size_t featureId);
