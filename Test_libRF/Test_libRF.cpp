@@ -128,7 +128,6 @@ int main(int argc, char** argv) {
 	  // Return test data to model for use in cross-validation (I think).
 	  ft->ResetRemovedIDs();
 
-	  omp_set_num_threads(numThreads);
 	  // Compute error of model on test data.
 	  // Tried to use OpenMP to parallelize the classification but ended up being over a second slower with 16 threads than without OpenMP.
 	  // #pragma omp parallel for reduction(+:error)
@@ -178,12 +177,19 @@ int main(int argc, char** argv) {
 	  if(!p)
 	  {
 	  	std::cout << "" << t0 << " seconds elapsed" << std::endl;
-		std::cout << "Error: " << double(error)/NumSamples << std::endl;
+	  	if(validation.compare("FiveFold") == 0)
+			std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
+		else
+			std::cout << "Error: " << double(error)/NumSamples << std::endl;
+
 	  }
 	  if(p)
 	  {
 	  	// print: n,t,time, error
-	  	std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/NumSamples << std::endl;
+	  	if(validation.compare("FiveFold") == 0)
+	  		std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/(NumSamples/5.0) << std::endl;
+	  	else
+	  		std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/NumSamples << std::endl;
 	  }
 
 
