@@ -117,6 +117,74 @@ double ClassifierRF::randBetween(double From, double To, size_t resolution) {
 	return From + r * (To-From);
 }
 
+__m128d ClassifierRF::scan_SSE(__m128d x) {
+    x = _mm_add_pd(x, _mm_castsi128_pd(_mm_slli_si128(_mm_castpd_si128(x), 4))); 
+    x = _mm_add_pd(x, _mm_shuffle_pd(_mm_setzero_pd(), x, 0x40));
+    return x;
+}
+
+double ClassifierRF::pass1_SSE(double *a, double *s, const int n) {
+    __m128d offset = _mm_setzero_pd();
+    #pragma omp for schedule(static) nowait
+    for (int i = 0; i < n / 4; i++) {
+        __m128d x = _mm_load_pd(&a[4 * i]);
+        __m128d out = scan_SSE(x);
+        out = _mm_add_pd(out, offset);
+        _mm_store_pd(&s[4 * i], out);
+        offset = _mm_shuffle_pd(out, out, _MM_SHUFFLE(3, 3, 3, 3));
+    }
+    double tmp[4];
+    _mm_store_pd(tmp, offset);
+    return tmp[3];
+}
+
+void ClassifierRF::pass2_SSE(double *s, __m128d offset, const int n) {
+
+    #pragma omp for schedule(static)
+    for (int i = 0; i<n/4; i++) {
+        __m128d tmp1 = _mm_load_pd(&s[4 * i]);
+        tmp1 = _mm_add_pd(tmp1, offset);
+        _mm_store_pd(&s[4 * i], tmp1);
+    }
+}
+
+void ClassifierRF::scan_omp_SSEp2_SSEp1_chunk(double a[], double s[], int n) {
+    double *suma;
+    const int chunk_size = 1<<18;
+    const int nchunks = n%chunk_size == 0 ? n / chunk_size : n / chunk_size + 1;
+    #pragma omp parallel
+    {
+        const int ithread = omp_get_thread_num();
+        const int nthreads = omp_get_num_threads();
+
+        #pragma omp single
+        {
+            suma = new double[nthreads + 1];
+            suma[0] = 0;
+        }
+
+        double offset2 = 0.0f;
+        for (int c = 0; c < nchunks; c++) {
+            const int start = c*chunk_size;
+            const int chunk = (c + 1)*chunk_size < n ? chunk_size : n - c*chunk_size;
+            suma[ithread + 1] = pass1_SSE(&a[start], &s[start], chunk);
+            #pragma omp barrier
+            #pragma omp single
+            {
+                double tmp = 0;
+                for (int i = 0; i < (nthreads + 1); i++) {
+                    tmp += suma[i];
+                    suma[i] = tmp;
+                }
+            }
+            __m128d offset = _mm_set1_pd(suma[ithread]+offset2);
+            pass2_SSE(&s[start], offset, chunk);
+            #pragma omp barrier
+            offset2 = s[start + chunk-1];
+        }
+    }
+    delete[] suma;
+}
 
 int ClassifierRF::Learn() {
 	//std::cout << "Learning started..." << std::endl;
@@ -133,7 +201,8 @@ int ClassifierRF::Learn() {
 	{
 		wAttr[i] = 1.0/numAttr;
 	}
-	std::partial_sum(wAttr, wAttr+numAttr, wAttr); // <-- SSE ?
+	std::partial_sum(wAttr, wAttr+numAttr, wAttr);
+	// scan_omp_SSEp2_SSEp1_chunk(wAttr, wAttr, numAttr);
 	wAttr[numAttr-1] = 1.01;
 
 	const size_t* dist = feat->GetClassDistribution();
