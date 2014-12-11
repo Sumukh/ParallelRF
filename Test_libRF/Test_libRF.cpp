@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 #ifdef USE_ON_WINDOWS
 	fp = "..\\Dataset\\Ionosphere";
 #else
-	fp = "Dataset/Ionosphere";
+	fp = "Dataset/Mnist_full";
 #endif
 	
 	size_t numTrees = 10;
@@ -79,27 +79,35 @@ int main(int argc, char** argv) {
 	size_t error = 0;
 	double t0 = timestamp();
 	// #pragma omp parallel for
-	for(size_t k=0;k<NumSamples;++k) {
-		ClassifierRF* RF = new ClassifierRF(numTrees, ft);
-		// std::cout << k << "/" << NumSamples << std::endl;
-		std::vector<size_t> tmp(1,k);
-		ft->RemoveSampleWithID(tmp);
-		RF->Learn();
-		ft->ResetRemovedIDs();
+	ClassifierRF* RF = new ClassifierRF(numTrees, ft);
+	// std::cout << k << "/" << NumSamples << std::endl;
+
+	std::vector<size_t> tmp;
+	for(size_t i=0;i<NumSamples;i+=5) {
+		// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
+		tmp.push_back(i);
+	}
+
+	ft->RemoveSampleWithID(tmp);
+	RF->Learn();
+	ft->ResetRemovedIDs();
+
+	for (size_t k=0; k<NumSamples; k+=5) {
 		std::vector<double> distri(NumClasses,0.0);
+		std::vector<size_t> tmp2(1,k);
 		RF->Classify(k,distri);
 		std::vector<size_t> trueCls;
-		ft->GetTrueClass(&trueCls, tmp);
-		RF->ClearCLF();
+		ft->GetTrueClass(&trueCls, tmp2);
 		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
 			#pragma omp critical
 			++error;
 		}
 	}
 	t0 = timestamp() - t0;
+	RF->ClearCLF();
 	std::cout << "" << t0 << " seconds elapsed" << std::endl;
 
-	std::cout << "Error: " << double(error)/NumSamples << std::endl;
+	std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
 
 	return 0;
 }
