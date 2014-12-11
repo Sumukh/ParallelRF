@@ -116,7 +116,7 @@ double ClassifierRF::randBetween(double From, double To, size_t resolution) {
 }
 
 
-int ClassifierRF::Learn() {
+int ClassifierRF::Learn(int t) {
 	//std::cout << "Learning started..." << std::endl;
 
 	size_t numAttr = feat->NumFeatures();
@@ -140,9 +140,9 @@ int ClassifierRF::Learn() {
 
 	srand(1);
 
-	omp_set_num_threads(16);
+	omp_set_num_threads(t);
 
-	#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<numTrees;++k) {
 		//set class uniform data weights
 		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());

@@ -45,7 +45,7 @@ public:
 	ClassifierRF(size_t num, FeaturesTable* feat);
 	~ClassifierRF();
 	
-	int Learn();
+	int Learn(int t);
 	int Classify(size_t dataIdx, std::vector<double>& distri);
 	int ClearCLF();
 };

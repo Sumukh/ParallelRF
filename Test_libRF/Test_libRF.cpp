@@ -23,6 +23,7 @@
 #include <sys/time.h>
 
 #include <omp.h>
+#include <getopt.h>
 
 #include "../libRF/FeaturesTable.h"
 #include "../libRF/ClassifierRF.h"
@@ -45,8 +46,8 @@ int main(int argc, char** argv) {
 	fp = "Dataset/Mnist_full";
 #endif
 	
-	size_t numTrees = 10;
-	int numThreads = 16 ; // numThreads to use for openMP 
+	size_t numTrees = 16;
+	int numThreads = 16; // numThreads to use for openMP 
 	int c;
 	/* Read options of command line */
 	while((c = getopt(argc, argv, "n:t:"))!=-1)
@@ -87,27 +88,28 @@ int main(int argc, char** argv) {
 		// Classifier<NUM_TYPE,classifier_type,feature_type> RF(&rp, &fp);
 		tmp.push_back(i);
 	}
-
+	
+	//	for (int t=8; t>=8; t-=1) {
+	  //omp_set_num_threads(t);
 	ft->RemoveSampleWithID(tmp);
-	RF->Learn();
+	RF->Learn(numThreads);
 	ft->ResetRemovedIDs();
-
+	
 	for (size_t k=0; k<NumSamples; k+=5) {
-		std::vector<double> distri(NumClasses,0.0);
-		std::vector<size_t> tmp2(1,k);
-		RF->Classify(k,distri);
-		std::vector<size_t> trueCls;
-		ft->GetTrueClass(&trueCls, tmp2);
-		if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-			#pragma omp critical
-			++error;
-		}
+	  std::vector<double> distri(NumClasses,0.0);
+	  std::vector<size_t> tmp2(1,k);
+	  RF->Classify(k,distri);
+	  std::vector<size_t> trueCls;
+	  ft->GetTrueClass(&trueCls, tmp2);
+	  if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
+	    //#pragma omp critical
+	    ++error;
+	  }
 	}
 	t0 = timestamp() - t0;
 	RF->ClearCLF();
-	std::cout << "" << t0 << " seconds elapsed" << std::endl;
-
-	std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
-
+	std::cout << numThreads << "," << t0 << "," << double(error)/(NumSamples/5.0) << std::endl;
+	
+	//std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
 	return 0;
 }
