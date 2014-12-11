@@ -21,7 +21,7 @@
 #include <cmath>
 #include <algorithm>
 #include <sys/time.h>
-
+#include <getopt.h>
 #include <omp.h>
 
 #include "../libRF/FeaturesTable.h"
@@ -139,7 +139,13 @@ int main(int argc, char** argv) {
 	    std::vector<size_t> trueCls;
 	    ft->GetTrueClass(&trueCls, tmp);
 	    // Compare predicted class of test data from model to actual class.
-	    if (size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) {
+  if (i == 9794) { 
+		std::cout << "My Guess is " << size_t(std::max_element(distri, distri + NumClasses) - distri) << std::endl;
+		//std::cout << "The right answer is " << trueCls[0] << std::endl;
+	std::exit(0);
+
+}
+		if (size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) {
 	      ++error;
 	    }
 	    delete[] distri;
