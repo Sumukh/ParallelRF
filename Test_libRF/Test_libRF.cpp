@@ -21,7 +21,7 @@
 #include <cmath>
 #include <algorithm>
 #include <sys/time.h>
-#include <getopt.h>
+
 #include <omp.h>
 
 #include "../libRF/FeaturesTable.h"
@@ -105,14 +105,14 @@ int main(int argc, char** argv) {
 	double t0;
 	size_t error = 0;
 
+	 std::vector<size_t> test;
 	if (validation.compare("FiveFold") == 0) {
 	  // Select 20% of data for test dataset.
 	  // Hacky, but deterministic which is good for testing.
-
-	  std::vector<size_t> test;
 	  for(size_t i=0; i<NumSamples; i+=5) {
 	    test.push_back(i);
 	  }
+	 
 	  // Create random forest model.
 	  ClassifierRF* RF = new ClassifierRF(numTrees, numThreads, ft);
 
@@ -131,11 +131,11 @@ int main(int argc, char** argv) {
 	  // Compute error of model on test data.
 	  // Tried to use OpenMP to parallelize the classification but ended up being over a second slower with 16 threads than without OpenMP.
 	  // #pragma omp parallel for reduction(+:error)
-	  for (size_t i=0; i<NumSamples; i++) {
-	    std::vector<size_t> tmp(1,i);
+	  for (size_t i=0; i<test.size(); i++) {
+	    std::vector<size_t> tmp(1,test.at(i));
 	    double* distri = new double[NumClasses];
 	    std::fill(distri, distri+NumClasses, 0.0);
-	    RF->Classify(i, distri, NumClasses);
+	    RF->Classify(test.at(i), distri, NumClasses);
 	    std::vector<size_t> trueCls;
 	    ft->GetTrueClass(&trueCls, tmp);
 	    // Compare predicted class of test data from model to actual class.
@@ -162,13 +162,8 @@ int main(int argc, char** argv) {
 	      std::vector<size_t> trueCls;
 	      ft->GetTrueClass(&trueCls, tmp);
 	      RF->ClearCLF(); 
-	      // if(size_t(std::max_element(distri.begin(), distri.end())-distri.begin())!=trueCls[0]) {
-	      // 	#pragma omp critical
-	      // 	++error;
-	      // }
 	      if(size_t(std::max_element(distri, distri + NumClasses) - distri)!=trueCls[0]) { 
-		//#pragma omp critical
-		++error;
+			++error;
 	      }
 	      delete [] distri;
 	    }
@@ -177,8 +172,10 @@ int main(int argc, char** argv) {
 	  if(!p)
 	  {
 	  	std::cout << "" << t0 << " seconds elapsed" << std::endl;
+	  	std::cout << "test Size " << test.size()<< std::endl;
+	  	std::cout << "NumSamples " << NumSamples<< std::endl;
 	  	if(validation.compare("FiveFold") == 0)
-			std::cout << "Error: " << double(error)/(NumSamples/5.0) << std::endl;
+			std::cout << "Error: " << double(error)/test.size() << std::endl;
 		else
 			std::cout << "Error: " << double(error)/NumSamples << std::endl;
 
@@ -187,7 +184,7 @@ int main(int argc, char** argv) {
 	  {
 	  	// print: n,t,time, error
 	  	if(validation.compare("FiveFold") == 0)
-	  		std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/(NumSamples/5.0) << std::endl;
+	  		std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/test.size() << std::endl;
 	  	else
 	  		std::cout << numTrees << "," << numThreads <<"," << t0 << "," << double(error)/NumSamples << std::endl;
 	  }

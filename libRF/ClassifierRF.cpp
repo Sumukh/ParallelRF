@@ -117,74 +117,6 @@ double ClassifierRF::randBetween(double From, double To, size_t resolution) {
 	return From + r * (To-From);
 }
 
-__m128d ClassifierRF::scan_SSE(__m128d x) {
-    x = _mm_add_pd(x, _mm_castsi128_pd(_mm_slli_si128(_mm_castpd_si128(x), 4))); 
-    x = _mm_add_pd(x, _mm_shuffle_pd(_mm_setzero_pd(), x, 0x40));
-    return x;
-}
-
-double ClassifierRF::pass1_SSE(double *a, double *s, const int n) {
-    __m128d offset = _mm_setzero_pd();
-    #pragma omp for schedule(static) nowait
-    for (int i = 0; i < n / 4; i++) {
-        __m128d x = _mm_load_pd(&a[4 * i]);
-        __m128d out = scan_SSE(x);
-        out = _mm_add_pd(out, offset);
-        _mm_store_pd(&s[4 * i], out);
-        offset = _mm_shuffle_pd(out, out, _MM_SHUFFLE(3, 3, 3, 3));
-    }
-    double tmp[4];
-    _mm_store_pd(tmp, offset);
-    return tmp[3];
-}
-
-void ClassifierRF::pass2_SSE(double *s, __m128d offset, const int n) {
-
-    #pragma omp for schedule(static)
-    for (int i = 0; i<n/4; i++) {
-        __m128d tmp1 = _mm_load_pd(&s[4 * i]);
-        tmp1 = _mm_add_pd(tmp1, offset);
-        _mm_store_pd(&s[4 * i], tmp1);
-    }
-}
-
-void ClassifierRF::scan_omp_SSEp2_SSEp1_chunk(double a[], double s[], int n) {
-    double *suma;
-    const int chunk_size = 1<<18;
-    const int nchunks = n%chunk_size == 0 ? n / chunk_size : n / chunk_size + 1;
-    #pragma omp parallel
-    {
-        const int ithread = omp_get_thread_num();
-        const int nthreads = omp_get_num_threads();
-
-        #pragma omp single
-        {
-            suma = new double[nthreads + 1];
-            suma[0] = 0;
-        }
-
-        double offset2 = 0.0f;
-        for (int c = 0; c < nchunks; c++) {
-            const int start = c*chunk_size;
-            const int chunk = (c + 1)*chunk_size < n ? chunk_size : n - c*chunk_size;
-            suma[ithread + 1] = pass1_SSE(&a[start], &s[start], chunk);
-            #pragma omp barrier
-            #pragma omp single
-            {
-                double tmp = 0;
-                for (int i = 0; i < (nthreads + 1); i++) {
-                    tmp += suma[i];
-                    suma[i] = tmp;
-                }
-            }
-            __m128d offset = _mm_set1_pd(suma[ithread]+offset2);
-            pass2_SSE(&s[start], offset, chunk);
-            #pragma omp barrier
-            offset2 = s[start + chunk-1];
-        }
-    }
-    delete[] suma;
-}
 
 int ClassifierRF::Learn() {
 	//std::cout << "Learning started..." << std::endl;
@@ -201,20 +133,17 @@ int ClassifierRF::Learn() {
 	{
 		wAttr[i] = 1.0/numAttr;
 	}
-	std::partial_sum(wAttr, wAttr+numAttr, wAttr);
-	// scan_omp_SSEp2_SSEp1_chunk(wAttr, wAttr, numAttr);
+	std::partial_sum(wAttr, wAttr+numAttr, wAttr); // <-- SSE ?
 	wAttr[numAttr-1] = 1.01;
 
-	const size_t* dist = feat->GetClassDistribution();
-	size_t distSize = feat->GetClassDistributionSize();
-	srand(1);
+	const std::vector<size_t>* dist = feat->GetClassDistribution();
 	#pragma omp parallel for schedule(dynamic)
 	for(size_t k=0;k<numTrees;++k) {
 		//set class uniform data weights
-		std::vector<std::vector<double> > DataWeights(distSize, std::vector<double>());
+		std::vector<std::vector<double> > DataWeights(dist->size(), std::vector<double>());
 		//std::cout << "Dist size " << dist->size() << std::endl;
-		for(size_t m=0;m<distSize;++m) {
-			DataWeights[m].assign(dist[m], 1.0/dist[m]);
+		for(size_t m=0;m<dist->size();++m) {
+			DataWeights[m].assign(dist->at(m), 1.0/dist->at(m));
 			// std::cout << "size used in assign " << dist->at(m) << std::endl;
 		}
 
@@ -224,7 +153,7 @@ int ClassifierRF::Learn() {
 
 		//initialize tree
 		RFHeadNodes[k] = new RFNode();
-		RFHeadNodes[k]->dist = new double[distSize];
+		RFHeadNodes[k]->dist = new double[dist->size()];
 		std::vector<size_t> cls;
 		feat->GetClassDistribution(RFHeadNodes[k]->dist, &cls, ibIdx);
 
@@ -234,10 +163,10 @@ int ClassifierRF::Learn() {
 		feat->GetClassDistribution(NULL, &cls, oobIdx);
 		size_t error = 0;
 		for(size_t m=0;m<oobIdx.size();++m) {
-			double* distri = new double[distSize];
-			std::fill_n(distri, distSize, 0.0); 
-			ClassifyTree(RFHeadNodes[k], oobIdx[m], distri,distSize);
-			size_t predCls = std::max_element(distri, distri + distSize)-distri; 
+			double* distri = new double[dist->size()];
+			std::fill_n(distri, dist->size(), 0.0); 
+			ClassifyTree(RFHeadNodes[k], oobIdx[m], distri,dist->size());
+			size_t predCls = std::max_element(distri, distri + dist->size())-distri; 
 			if(predCls!=cls[m]) {
 				++error;
 			}
@@ -503,14 +432,14 @@ bool ClassifierRF::stoppingCriteria(RFNode* node) {
 }
 
 
-int ClassifierRF::WeightedSampling(const size_t* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep) {
+int ClassifierRF::WeightedSampling(const std::vector<size_t>* SamplesPerClass, std::vector<std::vector<double> >& DataWeights, std::vector<size_t>& oobIdx, std::vector<size_t>& ibIdx, std::vector<size_t>& ibRep) {
 	std::vector<std::vector<double> > sortedWeights;
-	size_t NumClasses = feat->GetClassDistributionSize();
+	size_t NumClasses = SamplesPerClass->size();
 	sortedWeights.resize(NumClasses);
 	//std::cout << "NumClasses " << NumClasses << std::endl;
 	for(size_t k=0;k<NumClasses;++k) {
 		size_t validSamples = 0;
-		size_t numSampleReq = SamplesPerClass[k];
+		size_t numSampleReq = SamplesPerClass->at(k);
 		//std::cout << "numSampleReq " << numSampleReq << std::endl;
 		while(validSamples++<numSampleReq) {
 			sortedWeights[k].push_back( randBetween(0, 1, numSampleReq) );

@@ -28,10 +28,8 @@
 class FeaturesTable{
 private:
 	bool removed;
-	size_t ClassDistributionSize; 
-	size_t ValidClassDistributionSize;	
-	size_t* ClassDistribution;
-	size_t* ValidClassDistribution;
+	std::vector<size_t> ClassDistribution;
+	std::vector<size_t> ValidClassDistribution;
 	std::vector<size_t> CumSamplesPerClass;
 	std::vector<size_t>  ValidCumSamplesPerClass;
 	std::map<size_t,size_t> ValidDataIDXToLine;
@@ -53,7 +51,7 @@ public:
 	size_t NumSamples();
 	size_t NumFeatures();
 	size_t NumClasses();
-	const size_t* GetClassDistribution();
+	const std::vector<size_t>* GetClassDistribution();
 	int GetClassDistribution(double* dist, std::vector<size_t>* cls, std::vector<size_t>& dataIdx);
 	int GetTrueClass(std::vector<size_t> *cls, std::vector<size_t> &dataIdx);
 	double FeatureResponse(size_t dataIdx, size_t featureId);

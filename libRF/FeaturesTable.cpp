@@ -97,7 +97,7 @@ FeaturesTable::FeaturesTable(std::string f) {
 
 FeaturesTable::~FeaturesTable() {
 	ClearFeat();
-	delete [] ClassDistribution;
+	//delete [] ClassDistribution;
 }
 
 
@@ -111,7 +111,7 @@ size_t FeaturesTable::NumSamples() {
 
 
 size_t FeaturesTable::NumClasses() {
-	return ClassDistributionSize;
+	return ClassDistribution.size();
 }
 
 int FeaturesTable::ClearFeat() {
@@ -156,11 +156,11 @@ int FeaturesTable::GetClassDistribution(double* dist, std::vector<size_t>* cls, 
 
 size_t FeaturesTable::GetClassDistributionSize()
 {
-	return ClassDistributionSize;
+	return ClassDistribution.size();
 }
 size_t FeaturesTable::GetValidClassDistributionSize()
 {
-	return ValidClassDistributionSize;
+	return ValidClassDistribution.size();
 }
 
 int FeaturesTable::LoadDataSet() {
@@ -170,10 +170,10 @@ int FeaturesTable::LoadDataSet() {
 
 	size_t numFeatures = size_t(-1);
 	CumSamplesPerClass.assign(fNames.size()+1,0);
-	//ClassDistribution.assign(fNames.size(), 0);
-	ClassDistributionSize = fNames.size();
-	ClassDistribution = new size_t[ClassDistributionSize];
-	std::fill(ClassDistribution, ClassDistribution + ClassDistributionSize, 0);
+	ClassDistribution.assign(fNames.size(), 0);
+	// ClassDistributionSize = fNames.size();
+	// ClassDistribution = new size_t[ClassDistributionSize];
+	// std::fill(ClassDistribution, ClassDistribution + ClassDistributionSize, 0);
 	std::string delimStr = "\t";
 	for(size_t k=0;k<fNames.size();++k) {
 		// std::cout << fNames[k] << std::endl;
@@ -200,14 +200,13 @@ int FeaturesTable::LoadDataSet() {
 		ClassDistribution[k] = CumSamplesPerClass[k+1]-CumSamplesPerClass[k];
 	}
 	ValidClassDistribution = ClassDistribution;
-	ValidClassDistributionSize = ClassDistributionSize;
 	ValidCumSamplesPerClass = CumSamplesPerClass;
 	return 0;
 }
 
 
-const size_t* FeaturesTable::GetClassDistribution() {
-	return ValidClassDistribution;
+const std::vector<size_t>*  FeaturesTable::GetClassDistribution() { 
+	return &ValidClassDistribution;
 }
 
 int FeaturesTable::RemoveSampleWithID(std::vector<size_t>& ids) {
@@ -217,7 +216,7 @@ int FeaturesTable::RemoveSampleWithID(std::vector<size_t>& ids) {
 	double* removeDist = new double[NumClasses()];
 	GetClassDistribution(removeDist,NULL,ids);
 
-	for(size_t k=0;k<ValidClassDistributionSize;++k) {
+	for(size_t k=0;k<ValidClassDistribution.size();++k) {
 		ValidClassDistribution[k] -= size_t(removeDist[k]);
 	}
 	double cumsum = 0;
