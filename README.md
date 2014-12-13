@@ -2,8 +2,7 @@
 lib Random Forest (libRF)
 ------------------------------------------------------
 Test Status:
-[![Build Status](https://magnum.travis-ci.com/Sumukh/ParallelRF.svg?token=NdwRmsyfoFUF1zEjsQkw&branch=master)](https://magnum.travis-ci.com/Sumukh/ParallelRF)
-
+[![Build Status](https://travis-ci.org/Sumukh/ParallelRF.svg)](https://travis-ci.org/Sumukh/ParallelRF)
 Content:
 
 1. Installing
